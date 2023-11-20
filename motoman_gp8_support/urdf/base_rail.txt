@@ -1,0 +1,22 @@
+    <!-- RIEL CON CILINDROS -->
+    <link name="${prefix}base_rail">
+        <visual>
+            <geometry>
+                <cylinder length="1.5" radius="0.01"/>
+            </geometry>
+            <origin rpy="1.57 0 0" xyz="-0.04 0 0"/>
+            <xacro:material_yaskawa_silver/>
+        </visual>
+        <visual>
+            <geometry>
+                <cylinder length="1.5" radius="0.01"/>
+            </geometry>
+            <origin rpy="1.57 0 0" xyz="-0.04 0 0"/>
+            <xacro:material_yaskawa_silver/>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder length="1.5" radius="0.02"/>
+            </geometry>
+        </collision>
+    </link>

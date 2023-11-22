@@ -183,21 +183,12 @@
         <axis xyz="-1 0 0" />
         <limit lower="-6.2944" upper="6.2944" effort="22.54" velocity="17.4845"/>
     </joint>
+    
     <joint name="${prefix}joint_6_t-tool0" type="fixed">
         <origin xyz="0.080 0 0" rpy="3.1415926 -1.570796 0"/>
         <parent link="${prefix}link_6_t"/>
         <child link="${prefix}tool0"/>
     </joint>
-    <!-- end of joint list -->
-
-    <!-- ROS base_link to Robot Manufacturer World Coordinates transform -->
-    <link name="${prefix}base" />
-    <joint name="${prefix}base_link-base" type="fixed">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <parent link="${prefix}base_rail"/>
-        <child link="${prefix}base"/>
-    </joint>
 
     </xacro:macro>
 </robot>
-

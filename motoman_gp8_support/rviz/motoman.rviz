@@ -63,10 +63,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
         base_link:
           Alpha: 1
           Show Axes: false
@@ -135,24 +131,10 @@ Visualization Manager:
       Frame Timeout: 9999
       Frames:
         All Enabled: false
-        base:
-          Value: true
         base_link:
           Value: true
         base_plate:
           Value: false
-        base_rail:
-          Value: true
-        link_1_s:
-          Value: true
-        link_2_l:
-          Value: true
-        link_3_u:
-          Value: true
-        link_4_r:
-          Value: true
-        link_5_b:
-          Value: true
         link_6_t:
           Value: false
         tool0:
@@ -164,19 +146,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        base_rail:
-          base:
-            {}
-          base_plate:
-            base_link:
-              link_1_s:
-                link_2_l:
-                  link_3_u:
-                    link_4_r:
-                      link_5_b:
-                        link_6_t:
-                          tool0:
-                            {}
+        {}
       Update Interval: 0
       Value: true
     - Class: rviz/Marker
@@ -184,14 +154,14 @@ Visualization Manager:
       Marker Topic: visualization_marker
       Name: Marker
       Namespaces:
-        ball_markers: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: base
+    Fixed Frame: base_rail
     Frame Rate: 30
   Name: root
   Tools:

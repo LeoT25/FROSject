@@ -14,10 +14,10 @@ pub = rospy.Publisher('joint_states', JointState, queue_size=1000)
 bmarker_actual  = BallMarker(color['RED'])
 bmarker_deseado = BallMarker(color['GREEN'])
 # Archivos donde se almacenara los datos
-fqact = open("/home/user/lab_ws/qactual.txt", "w")
-fqdes = open("/home/user/lab_ws/qdeseado.txt", "w")
-fxact = open("/home/user/lab_ws/xactual.txt", "w")
-fxdes = open("/home/user/lab_ws/xdeseado.txt", "w")
+fqact = open("/home/user/lab_ws/pdg_qactual.txt", "w")
+fqdes = open("/home/user/lab_ws/pdg_qdeseado.txt", "w")
+fxact = open("/home/user/lab_ws/pdg_xactual.txt", "w")
+fxdes = open("/home/user/lab_ws/pdg_xdeseado.txt", "w")
 
 # Nombres de las articulaciones
 jnames = ['joint_0_s','joint_1_s','joint_2_l','joint_3_u','joint_4_r','joint_5_b','joint_6_t']
@@ -29,11 +29,11 @@ jstate.name = jnames
 
 # =============================================================
 # Configuracion articular inicial (en radianes)
-q = np.array([0.1, 0.5, 0, 1.7, 1.2, -1.6, 0.0])
+q = np.array([-0.1, -0.2, 1.1, 2.7, 1.2, -1.6, 0.0])
 # Velocidad inicial
 dq = np.array([0., 0., 0., 0., 0., 0., 0.])
 # Configuracion articular deseada
-qdes = np.array([0.3, 1.0, 0.2, 1.0, 1.3, -1.5, 1.0])
+qdes = np.array([0.25, 0.6, 1.2, 1.0, 0.8, 1.1, 2.0])
 # =============================================================
 
 # Posicion resultante de la configuracion articular deseada
@@ -47,7 +47,7 @@ modelo = rbdl.loadModel('../urdf/gp8_modelo.urdf')
 ndof   = modelo.q_size     # Grados de libertad
 
 # Frecuencia del envio (en Hz)
-freq = 60
+freq = 100
 dt = 1.0/freq
 rate = rospy.Rate(freq)
 
@@ -55,14 +55,19 @@ rate = rospy.Rate(freq)
 robot = Robot(q, dq, ndof, dt)
 
 # Se definen las ganancias del controlador
-valores = 1.0*np.array([5.0, 5.0, 5.0, 5.0, 5.0, 1.0, 0.1])
-Kp = np.diag(valores)
-Kd = 2*np.sqrt(Kp)
+dkp = 1.0*np.array([20, 2.0, 2.0, 2.0, 2.0, 3.0, 3])
+Kp = np.diag(dkp)
+
+dkd = 1.0*np.array([20, 1.0, 4.0, 4.0, 1.0, 2.0, 1.5])
+Kd = np.diag(dkd)
 
 # Bucle de ejecucion continua
 t = 0.0
 zeros = np.zeros(ndof)
 g     = np.zeros(ndof)
+eps = 0.001
+
+rospy.sleep(6)
 
 while not rospy.is_shutdown():
 
@@ -74,16 +79,23 @@ while not rospy.is_shutdown():
     # Tiempo actual (necesario como indicador para ROS)
     jstate.header.stamp = rospy.Time.now()
 
+    
+
     # Almacenamiento de datos
     fxact.write(str(t)+' '+str(x[0])+' '+str(x[1])+' '+str(x[2])+'\n')
     fxdes.write(str(t)+' '+str(xdes[0])+' '+str(xdes[1])+' '+str(xdes[2])+'\n')
-    fqact.write(str(t)+' '+str(q[0])+' '+str(q[1])+' '+ str(q[2])+' '+ str(q[3])+' '+str(q[4])+' '+str(q[5])+'\n ')
-    fqdes.write(str(t)+' '+str(qdes[0])+' '+str(qdes[1])+' '+ str(qdes[2])+' '+ str(qdes[3])+' '+str(qdes[4])+' '+str(qdes[5])+'\n ')
+    fqact.write(str(t)+' '+str(q[0])+' '+str(q[1])+' '+ str(q[2])+' '+str(q[3])
+    +' '+str(q[4])+' '+str(q[5])+' '+str(q[6])+'\n')
+    fqdes.write(str(t)+' '+str(qdes[0])+' '+str(qdes[1])+' '+ str(qdes[2])+' '
+    + str(qdes[3])+' '+str(qdes[4])+' '+str(qdes[5])+' '+str(qdes[6])+'\n')
 
     # ----------------------------
-    # Control dinamico (COMPLETAR)
+    # Control dinamico
     # ----------------------------
     e = qdes - q
+
+    if(np.linalg.norm(dq)<eps*10 and np.linalg.norm(e)<eps): break
+
     # Compensación de gravedad
     rbdl.InverseDynamics(modelo, q, zeros, zeros, g)
     u = Kp.dot(e) - Kd.dot(dq) + g    # Reemplazar por la ley de control

@@ -1,8 +1,76 @@
 import numpy as np
 from copy import copy
+import rbdl
 
 pi = np.pi
 
+class Robot(object):
+    def __init__(self, q0, dq0, ndof, dt):
+        self.q = q0    # numpy array (ndof x 1)
+        self.dq = dq0  # numpy array (ndof x 1)
+        self.M = np.zeros([ndof, ndof])
+        self.b = np.zeros(ndof)
+        self.dt = dt
+        self.robot = rbdl.loadModel('../urdf/gp8_modelo.urdf')
+
+    def send_command(self, tau):
+        rbdl.CompositeRigidBodyAlgorithm(self.robot, self.q, self.M)
+        rbdl.NonlinearEffects(self.robot, self.q, self.dq, self.b)
+        ddq = np.linalg.inv(self.M).dot(tau-self.b)
+        self.q = self.q + self.dt*self.dq
+        self.dq = self.dq + self.dt*ddq
+
+        # -----------------------------
+        # Limites
+        if(self.q[0]<-0.5000): self.q[0]=-0.5000
+        if(self.q[0]> 0.5000): self.q[0]=0.5000
+
+        if(self.q[1]<-2.9670): self.q[1]=-2.9670
+        if(self.q[1]> 2.9670): self.q[1]=2.9670
+
+        if(self.q[2]<-1.1344): self.q[2]=-1.1344
+        if(self.q[2]> 2.5307): self.q[2]=2.5307
+
+        if(self.q[3]<-1.2217): self.q[3]=-1.2217
+        if(self.q[3]> 3.3161): self.q[3]=3.3161
+
+        if(self.q[4]<-3.3161): self.q[4]=-3.3161
+        if(self.q[4]> 3.3161): self.q[4]=3.3161
+
+        if(self.q[5]<-2.3561): self.q[5]=-2.3561
+        if(self.q[5]> 2.3561): self.q[5]=2.3561
+
+        if(self.q[6]<-6.2944): self.q[6]=-6.2944
+        if(self.q[6]> 6.2944): self.q[6]=6.2944
+
+        # -----------------------------
+        # Limites
+        if(self.dq[0]<-0.02): self.dq[0]=-0.02
+        if(self.dq[0]> 0.02): self.dq[0]=0.02
+
+        if(self.dq[1]<-7.9412): self.dq[1]=-7.9412
+        if(self.dq[1]> 7.9412): self.dq[1]=7.9412
+
+        if(self.dq[2]<-6.7495): self.dq[2]=-6.7495
+        if(self.dq[2]> 6.7495): self.dq[2]=6.7495
+
+        if(self.dq[3]<-9.0757): self.dq[3]=-9.0757
+        if(self.dq[3]> 9.0757): self.dq[3]=9.0757
+
+        if(self.dq[4]<-9.5993): self.dq[4]=-9.5993
+        if(self.dq[4]> 9.5993): self.dq[4]=9.5993
+
+        if(self.dq[5]<-9.5993): self.dq[5]=-9.5993
+        if(self.dq[5]> 9.5993): self.dq[5]=9.5993
+
+        if(self.dq[6]<-17.4845): self.dq[6]=-17.4845
+        if(self.dq[6]> 17.4845): self.dq[6]=17.4845
+
+    def read_joint_positions(self):
+        return self.q
+
+    def read_joint_velocities(self):
+        return self.dq
 
 def dh(d, theta, a, alpha):
     """
@@ -28,7 +96,6 @@ def fkine_mmgp8(q):
     q es un vector numpy de la forma [q1, q2, q3, q4, q5, q6]
 
     """
-    # Longitudes (en metros)
 
     # Matrices DH (completar)
     T0 = np.array([[1,0,0,0],[0,0,1,0],[0,-1,0,0],[0,0,0,1]])
@@ -41,7 +108,6 @@ def fkine_mmgp8(q):
     T7 = dh(0.08,q[6],0,0)
     # Efector final con respecto a la base
     T = T0@T1@T2@T3@T4@T5@T6@T7
-    #@T2@T3@T4@T5@T6@T7
     return T
 
 
@@ -66,56 +132,49 @@ def jacobian_position(q, delta=0.0001):
         T_inc = fkine_mmgp8(dq)
         # Aproximacion del Jacobiano de posicion usando diferencias finitas
         J[0:3,i]=(T_inc[0:3,3]-T[0:3,3])/delta
-        dq[i] = dq[i] - delta
     return J
 
 
 def ikine_mmgp8(xdes, q0):
-   """
-   Calcular la cinematica inversa de UR5 numericamente a partir de la configuracion articular inicial de q0.
-   Emplear el metodo de newton
-   """
-   epsilon  = 0.001
-   max_iter = 1000
-   delta    = 0.00001
-   # Files for the logs
-   error = open("/home/user/lab_ws/errorac.txt", "w")    
+    """
+    Calcular la cinematica inversa de UR5 numericamente a partir de la configuracion articular inicial de q0.
+    Emplear el metodo de newton
+    """
+    epsilon  = 0.001
+    max_iter = 1000
+    # Files for the logs
+    error = open("/home/user/lab_ws/errorac.txt", "w")    
 
-   q  = copy(q0)
-   for i in range(max_iter):
-       # Main loop
-       J = jacobian_position(q)
-       f = fkine_mmgp8(q)
-       e = xdes - f[0:3,3]
-       q = q + np.dot(J.T, e)
-       error.write(str(e[0])+' '+str(e[1]) +' '+str(e[2])+'\n')
-       if (np.linalg.norm(e) < epsilon):
-           break
-       pass
-   return q
+    q  = copy(q0)
+    for i in range(max_iter):
+        # Main loop
+        J = jacobian_position(q)
+        f = fkine_mmgp8(q)
+        e = xdes - f[0:3,3]
+        q = q + np.dot(J.T, e)
+        norm_e = np.linalg.norm(e)
+        error.write(str(e[0])+' '+str(e[1]) +' '+str(e[2])+' '+str(norm_e)+'\n')
+        if (norm_e < epsilon):
+            break
+    return q
 
 def ik_gradient_mmgp8(xdes, q0):
-   """
-   Calcular la cinematica inversa de UR5 numericamente a partir de la configuracion articular inicial de q0.
-   Emplear el metodo gradiente
-   """
-   epsilon  = 0.001
-   max_iter = 1000
-   delta    = 0.001
-   alpha = 0.1
+    """
+    Calcular la cinematica inversa de UR5 numericamente a partir de la configuracion articular inicial de q0.
+    Emplear el metodo gradiente
+    """
+    epsilon  = 0.001
+    max_iter = 1000
+    alpha = 0.1
 
+    q  = copy(q0)
+    for i in range(max_iter):
+        # Main loop
+        J = jacobian_position(q)
+        f = fkine_mmgp8(q)
+        e = xdes - f[0:3,3]
+        q = q + alpha*np.dot(J.T, e)
 
-   q  = copy(q0)
-   for i in range(max_iter):
-       # Main loop
-       J = jacobian_position(q)
-       f = fkine_mmgp8(q)
-       e = xdes - f[0:3,3]
-       q = q + alpha*np.dot(J.T, e)
-      
-       if (np.linalg.norm(e) < epsilon):
-           break
-          
-       pass
-  
-   return q
+        if (np.linalg.norm(e) < epsilon):
+            break  
+    return q
